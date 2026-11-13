@@ -1,0 +1,20 @@
+# Copy to terraform.tfvars and edit. terraform.tfvars is git-ignored.
+
+aws_region   = "us-east-1"
+project_name = "hotel-rooms"
+environment  = "dev"
+
+# t3.small recommended; t3.micro / t2.micro are free-tier alternatives (slower builds).
+instance_type = "t3.small"
+
+# REQUIRED: public HTTPS repo with docker-compose.yml at the root.
+repo_url    = "https://github.com/<your-user>/crud-hotel.git"
+repo_branch = "main"
+
+# Restrict SSH to your IP whenever possible (default 0.0.0.0/0 is open to the world).
+ssh_allowed_cidr = "0.0.0.0/0"
+
+# Key pair: generate one (default) or reuse an existing one.
+create_key_pair = true
+# existing_key_name = "my-existing-key"   # use with create_key_pair = false
+private_key_path = "./hotel-key.pem"
