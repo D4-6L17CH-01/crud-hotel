@@ -11,6 +11,17 @@ data "aws_vpc" "default" {
   default = true
 }
 
+# Availability Zones that actually offer the chosen instance type
+# (e.g. us-east-1e does not offer t3.*).
+data "aws_ec2_instance_type_offerings" "supported" {
+  location_type = "availability-zone"
+
+  filter {
+    name   = "instance-type"
+    values = [var.instance_type]
+  }
+}
+
 data "aws_subnets" "default" {
   filter {
     name   = "vpc-id"
@@ -20,6 +31,11 @@ data "aws_subnets" "default" {
   filter {
     name   = "default-for-az"
     values = ["true"]
+  }
+
+  filter {
+    name   = "availability-zone"
+    values = data.aws_ec2_instance_type_offerings.supported.locations
   }
 }
 
@@ -135,13 +151,17 @@ resource "aws_instance" "app" {
   }
 
   lifecycle {
+    # The SSM parameter always points to the newest AL2023 AMI. Without this,
+    # a new AMI release would replace the instance and wipe the database volume.
+    ignore_changes = [ami]
+
     precondition {
       condition     = var.create_key_pair || var.existing_key_name != ""
       error_message = "Set create_key_pair = true or provide existing_key_name; otherwise there is no way to SSH into the instance."
     }
     precondition {
       condition     = length(data.aws_subnets.default.ids) > 0
-      error_message = "No default subnet found in the default VPC of this region."
+      error_message = "No default subnet in this region is in an Availability Zone that offers the selected instance_type."
     }
   }
 }
